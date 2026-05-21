@@ -1,14 +1,84 @@
-.category-title {
-    font-size: 1.6rem;
-    color: var(--primary);
-    border-bottom: 3px solid var(--accent);
-    padding-bottom: 0.5rem;
-    margin-bottom: 1.5rem;
-    margin-top: 0;
+:root {
+    --primary: #1a2a3a;
+    --accent: #c5a059;
+    --bg: #f8f9fa;
+    --text: #2d3748;
 }
 
-.card h3 {
-    margin: 0 0 0.5rem 0;
+body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    background-color: var(--primary);
+    color: white;
+    padding: 2rem 5%;
+    border-bottom: 4px solid var(--accent);
+}
+
+header h1 { margin: 0; font-size: 2rem; }
+header p { margin: 0.5rem 0 0 0; color: #a0aec0; font-style: italic; }
+
+.container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 2rem;
+}
+
+.sidebar {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    height: fit-content;
+}
+
+.sidebar h3 { color: var(--primary); border-bottom: 2px solid var(--accent); padding-bottom: 0.5rem; margin-top: 0; }
+
+.tag {
+    display: inline-block;
+    background: #edf2f7;
     color: var(--primary);
-    font-size: 1.3rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    margin: 0.2rem;
+    font-weight: bold;
+}
+
+.feed { display: flex; flex-direction: column; }
+
+.category-title {
+    font-size: 1.4rem;
+    color: var(--primary);
+    border-bottom: 3px solid var(--accent);
+    padding-bottom: 0.4rem;
+    margin-bottom: 1.5rem;
+}
+
+.card {
+    background: white;
+    border-left: 5px solid var(--accent);
+    padding: 1.5rem;
+    border-radius: 0 8px 8px 0;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    margin-bottom: 1rem;
+}
+
+.card h3 { margin: 0 0 0.5rem 0; color: var(--primary); font-size: 1.2rem; }
+
+.meta {
+    font-size: 0.8rem;
+    color: #718096;
+    margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: space-between;
 }
