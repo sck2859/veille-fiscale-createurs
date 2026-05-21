@@ -3,31 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Veille Fiscale - Créateurs de Contenu</title>
+    <title>Tax Legal Toolkit - Mémoire de Recherche</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header>
-        <h1>Veille Juridique Automatisée</h1>
-        <p>Mémoire de Master : Le régime fiscal des créateurs de contenu</p>
+        <h1>Tax Legal Toolkit</h1>
+        <p>Espace de Recherche & Veille Analytique • Le régime fiscal des créateurs de contenu</p>
     </header>
+
     <div class="container">
         <aside class="sidebar">
-            <h3>Sources Suivies</h3>
+            <h3>Structure du Mémoire</h3>
+            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
+                <li>📁 <b>Partie I : La qualification des revenus</b></li>
+                <li>└ ℹ️ BNC, Micro-BNC et Droits d'auteur</li>
+                <li>📁 <b>Partie II : La fiscalité indirecte & internationale</b></li>
+                <li>└ ℹ️ Territorialité de la TVA & Flux transfrontaliers</li>
+            </ul>
+            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 1.5rem 0;">
+            <h3>Sources Analysées</h3>
             <div class="tags">
                 <span class="tag">Conseil d'État</span>
-                <span class="tag">Cour de cassation</span>
-                <span class="tag">CJUE (TVA)</span>
+                <span class="tag">CJUE</span>
                 <span class="tag">BOFiP</span>
                 <span class="tag">Légifrance</span>
-                <span class="tag">Dalloz / Navis</span>
+                <span class="tag">Dalloz</span>
+                <span class="tag">Navis</span>
             </div>
         </aside>
-        <main class="feed" id="veille-content">
-            <div class="card">
-                <h2>Initialisation du tableau de bord...</h2>
-                <p>Le robot est prêt à générer la première veille universitaire.</p>
-            </div>
+
+        <main class="feed">
+            <section class="category-section">
+                <h2 class="category-title">⚖️ 1. Jurisprudence & Contentieux (CE, Cass, CJUE)</h2>
+                <div id="jurisprudence-container">
+                    </div>
+            </section>
+
+            <section class="category-section" style="margin-top: 3rem;">
+                <h2 class="category-title">📜 2. Doctrine Administrative & Textes (BOFiP, Lois)</h2>
+                <div id="bofip-container">
+                    </div>
+            </section>
+
+            <section class="category-section" style="margin-top: 3rem;">
+                <h2 class="category-title">📚 3. Doctrine Universitaire & Revues (Dalloz, Navis, Lextenso)</h2>
+                <div id="doctrine-container">
+                    </div>
+            </section>
         </main>
     </div>
 </body>
