@@ -1,57 +1,93 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tax Legal Toolkit - Mémoire de Recherche</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <header>
-        <h1>Tax Legal Toolkit</h1>
-        <p>Espace de Recherche & Veille Analytique • Le régime fiscal des créateurs de contenu</p>
-    </header>
+import os
+from google import genai
 
-    <div class="container">
-        <aside class="sidebar">
-            <h3>Structure du Mémoire</h3>
-            <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
-                <li>📁 <b>Partie I : La qualification des revenus</b></li>
-                <li>└ ℹ️ BNC, Micro-BNC et Droits d'auteur</li>
-                <li>📁 <b>Partie II : La fiscalité indirecte & internationale</b></li>
-                <li>└ ℹ️ Territorialité de la TVA & Flux transfrontaliers</li>
-            </ul>
-            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 1.5rem 0;">
-            <h3>Sources Analysées</h3>
-            <div class="tags">
-                <span class="tag">Conseil d'État</span>
-                <span class="tag">CJUE</span>
-                <span class="tag">BOFiP</span>
-                <span class="tag">Légifrance</span>
-                <span class="tag">Dalloz</span>
-                <span class="tag">Navis</span>
-            </div>
-        </aside>
+# 1. Connexion sécurisée à l'API Gemini
+api_key = os.environ.get("GEMINI_API_KEY")
+if not api_key:
+    raise ValueError("Erreur : La clé GEMINI_API_KEY est introuvable dans les variables d'environnement.")
 
-        <main class="feed">
-            <section class="category-section">
-                <h2 class="category-title">⚖️ 1. Jurisprudence & Contentieux (CE, Cass, CJUE)</h2>
-                <div id="jurisprudence-container">
-                    </div>
-            </section>
+client = genai.Client(api_key=api_key)
 
-            <section class="category-section" style="margin-top: 3rem;">
-                <h2 class="category-title">📜 2. Doctrine Administrative & Textes (BOFiP, Lois)</h2>
-                <div id="bofip-container">
-                    </div>
-            </section>
+# 2. Ta base de données brute de veille
+base_donnees = """
+- Source: [BOFiP]. Régime des micro-BNC et créateurs de contenu. Clarification sur l'articulation entre l'abattement de 34% et les dépenses réelles des influenceurs.
+- Source: [Conseil d'État]. Arrêt CE, 15 mars 2026. Les gains issus d'abonnements directs étrangers (OnlyFans, Patreon) sont des BNC professionnels imposables en France.
+- Source: [CJUE]. Territorialité de la TVA sur les services numériques. Détermination de la TVA pour les placements de produits transfrontaliers.
+- Source: [Dalloz]. La requalification fiscale des avantages en nature (cadeaux, voyages) accordés aux influenceurs au titre de l'article 79 du CGI.
+- Source: [Navis]. Structuration en SASU ou Entreprise Individuelle pour les streamers : arbitrage fiscal IR vs IS.
+"""
 
-            <section class="category-section" style="margin-top: 3rem;">
-                <h2 class="category-title">📚 3. Doctrine Universitaire & Revues (Dalloz, Navis, Lextenso)</h2>
-                <div id="doctrine-container">
-                    </div>
-            </section>
-        </main>
+# 3. Consignes chirurgicales pour l'IA
+consigne_ia = f"""
+Tu es un avocat fiscaliste et un assistant de recherche universitaire d'élite.
+Analyse ces éléments bruts : {base_donnees}.
+
+Tu dois rédiger des fiches de synthèse au format HTML pour le mémoire de l'étudiante.
+Pour chaque élément, utilise STRICTEMENT cette structure de carte :
+
+<div class="card" style="background: white; border-left: 5px solid #c5a059; padding: 1.5rem; margin-bottom: 1.5rem; border-radius: 0 8px 8px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+    <div class="meta" style="font-size: 0.8rem; color: #718096; margin-bottom: 0.5rem; display: flex; justify-content: space-between;">
+        <span>Source : NOM_DE_LA_SOURCE</span>
+        <span>Statut : Fiche de Synthèse</span>
     </div>
-</body>
-</html>
+    <h3 style="margin: 0 0 0.5rem 0; color: #1a2a3a; font-size: 1.2rem;">TITRE_DE_L_ARTICLE</h3>
+    <p style="margin: 0; color: #4a5568; line-height: 1.5;"><b>Résumé de la position :</b> RESUME_JURIDIQUE_DEVELOPPE_PAR_L_IA_EN_3_OU_4_LIGNES</p>
+    <p style="margin-top:0.8rem; font-size:0.9rem; color:#c5a059;"><b>💡 Intérêt pour le mémoire :</b> CONSEIL_DE_REDACTION_ET_STRATEGIE_D_INTEGRATION_DANS_LE_PLAN</p>
+</div>
+
+Sépare ta réponse en 3 blocs distincts en utilisant EXACTEMENT ces trois balises comme séparateurs :
+
+=== BLOC_JURISPRUDENCE ===
+(Mets ici uniquement les cartes pour le Conseil d'État et la CJUE)
+
+=== BLOC_BOFIP ===
+(Mets ici uniquement la carte pour le BOFiP)
+
+=== BLOC_DOCTRINE ===
+(Mets ici les cartes pour Dalloz et Navis)
+
+Ne mets aucune autre fioriture textuelle, aucun blabla, et pas de balises de code Markdown (```html). Donne-moi juste les balises de blocs et les cartes HTML à l'intérieur.
+"""
+
+print("Génération des analyses juridiques par Gemini...")
+
+try:
+    response = client.models.generate_content(model='gemini-2.5-flash', contents=consigne_ia)
+    texte_ia = response.text
+
+    # 4. Extraction propre des blocs générés par l'IA
+    partie_jurisprudence = ""
+    partie_bofip = ""
+    partie_doctrine = ""
+
+    try:
+        if "=== BLOC_JURISPRUDENCE ===" in texte_ia and "=== BLOC_BOFIP ===" in texte_ia:
+            partie_jurisprudence = texte_ia.split("=== BLOC_JURISPRUDENCE ===")[1].split("=== BLOC_BOFIP ===")[0].strip()
+        if "=== BLOC_BOFIP ===" in texte_ia and "=== BLOC_DOCTRINE ===" in texte_ia:
+            partie_bofip = texte_ia.split("=== BLOC_BOFIP ===")[1].split("=== BLOC_DOCTRINE ===")[0].strip()
+        if "=== BLOC_DOCTRINE ===" in texte_ia:
+            partie_doctrine = texte_ia.split("=== BLOC_DOCTRINE ===")[1].strip()
+    except Exception as split_error:
+        print(f"Erreur lors du découpage des blocs : {split_error}")
+
+    # 5. Lecture et injection sécurisée dans index.html
+    with open("index.html", "r", encoding="utf-8") as f:
+        html_content = f.read()
+
+    # Remplacements ciblés
+    if partie_jurisprudence:
+        html_content = html_content.replace("", partie_jurisprudence)
+    if partie_bofip:
+        html_content = html_content.replace("", partie_bofip)
+    if partie_doctrine:
+        html_content = html_content.replace("", partie_doctrine)
+
+    # 6. Écriture finale
+    with open("index.html", "w", encoding="utf-8") as f:
+        f.write(html_content)
+        
+    print("Fiches de veille triées et injectées avec succès !")
+
+except Exception as e:
+    print(f"Une erreur générale est survenue : {e}")
+    raise e
