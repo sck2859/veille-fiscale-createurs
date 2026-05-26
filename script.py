@@ -1,13 +1,14 @@
 import os
 from google import genai
 
+# 1. Connexion sécurisée à l'API Gemini
 api_key = os.environ.get("GEMINI_API_KEY")
 if not api_key:
-    raise ValueError("Erreur : Clé GEMINI_API_KEY introuvable.")
+    raise ValueError("Erreur : La clé GEMINI_API_KEY est introuvable.")
 
 client = genai.Client(api_key=api_key)
 
-# Matière brute
+# 2. Données brutes de la veille fiscale
 base_donnees = """
 - Source: [BOFiP]. Régime des micro-BNC et créateurs de contenu. Clarification sur l'articulation entre l'abattement de 34% et les dépenses réelles des influenceurs.
 - Source: [Conseil d'État]. Arrêt CE, 15 mars 2026. Les gains issus d'abonnements directs étrangers (OnlyFans, Patreon) sont des BNC professionnels imposables en France.
@@ -16,9 +17,10 @@ base_donnees = """
 - Source: [Navis]. Structuration en SASU ou Entreprise Individuelle pour les streamers : arbitrage fiscal IR vs IS.
 """
 
+# 3. Consigne pour récupérer uniquement les cartes HTML triées par balises repères
 consigne_ia = f"""
-Tu es un avocat fiscaliste. Prends ces éléments : {base_donnees}.
-Génère pour CHAQUE élément une carte HTML stricte au format suivant :
+Tu es un assistant de recherche en droit fiscal. Base-toi sur ces éléments : {base_donnees}.
+Génère pour CHAQUE élément une carte HTML au format suivant :
 
 <div class="card">
     <div class="meta"><span>Source : NOM_DE_LA_SOURCE</span><span>Statut : Fiche de Synthèse</span></div>
@@ -28,23 +30,38 @@ Génère pour CHAQUE élément une carte HTML stricte au format suivant :
 </div>
 
 Règles de tri impératives :
-- Si l'élément concerne le Conseil d'État ou la CJUE, mets la carte sous la ligne : - Si l'élément concerne le BOFiP ou Légifrance, mets la carte sous la ligne : - Si l'élément concerne Dalloz ou Navis, mets la carte sous la ligne : Renvoie uniquement le code contenant ces commentaires et les cartes correspondantes en dessous d'eux. Pas de balise ```html.
+Mets toutes les cartes du Conseil d'État et de la CJUE sous la ligne : === BLOC_JURISPRUDENCE ===
+Mets la carte du BOFiP sous la ligne : === BLOC_BOFIP ===
+Mets les cartes de Dalloz et Navis sous la ligne : === BLOC_DOCTRINE ===
+
+Renvoie uniquement le texte contenant ces trois lignes repères et leurs cartes associées. Pas de balises de code Markdown comme ```html.
 """
 
 try:
+    print("Appel de Gemini...")
     response = client.models.generate_content(model='gemini-2.5-flash', contents=consigne_ia)
     resultat_ia = response.text
 
-    # Tri basique et injection dans index.html
+    # Découpage des blocs reçus de l'IA
+    cartes_jurisprudence = resultat_ia.split("=== BLOC_JURISPRUDENCE ===")[1].split("=== BLOC_BOFIP ===")[0].strip()
+    cartes_bofip = resultat_ia.split("=== BLOC_BOFIP ===")[1].split("=== BLOC_DOCTRINE ===")[0].strip()
+    cartes_doctrine = resultat_ia.split("=== BLOC_DOCTRINE ===")[1].strip()
+
+    # Lecture du fichier de structure index.html
     with open("index.html", "r", encoding="utf-8") as f:
         html = f.read()
 
-    # Dispatching simple des textes générés par l'IA dans les conteneurs
-    # Pour s'assurer que tout s'affiche, on remplace les zones d'attente
-    html = html.replace("", resultat_ia)
-    
+    # Injection par remplacement d'identifiants (Ta méthode de l'application IT)
+    html = html.replace('<div id="jurisprudence-container"></div>', f'<div id="jurisprudence-container">\n{cartes_jurisprudence}\n</div>')
+    html = html.replace('<div id="bofip-container"></div>', f'<div id="bofip-container">\n{cartes_bofip}\n</div>')
+    html = html.replace('<div id="doctrine-container"></div>', f'<div id="doctrine-container">\n{cartes_doctrine}\n</div>')
+
+    # Sauvegarde du fichier final mis à jour
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html)
-    print("Injection réussie !")
+        
+    print("Fiches injectées proprement avec ta méthode d'origine !")
+
 except Exception as e:
-    print(f"Erreur : {e}")
+    print(f"Erreur d'exécution : {e}")
+    raise e
