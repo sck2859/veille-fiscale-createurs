@@ -1,67 +1,77 @@
 import os
-from google import genai
 
-# 1. Connexion sécurisée à l'API Gemini
-api_key = os.environ.get("GEMINI_API_KEY")
-if not api_key:
-    raise ValueError("Erreur : La clé GEMINI_API_KEY est introuvable.")
-
-client = genai.Client(api_key=api_key)
-
-# 2. Données brutes de la veille fiscale
-base_donnees = """
-- Source: [BOFiP]. Régime des micro-BNC et créateurs de contenu. Clarification sur l'articulation entre l'abattement de 34% et les dépenses réelles des influenceurs.
-- Source: [Conseil d'État]. Arrêt CE, 15 mars 2026. Les gains issus d'abonnements directs étrangers (OnlyFans, Patreon) sont des BNC professionnels imposables en France.
-- Source: [CJUE]. Territorialité de la TVA sur les services numériques. Détermination de la TVA pour les placements de produits transfrontaliers.
-- Source: [Dalloz]. La requalification fiscale des avantages en nature (cadeaux, voyages) accordés aux influenceurs au titre de l'article 79 du CGI.
-- Source: [Navis]. Structuration en SASU ou Entreprise Individuelle pour les streamers : arbitrage fiscal IR vs IS.
-"""
-
-# 3. Consigne pour récupérer uniquement les cartes HTML triées par balises repères
-consigne_ia = f"""
-Tu es un assistant de recherche en droit fiscal. Base-toi sur ces éléments : {base_donnees}.
-Génère pour CHAQUE élément une carte HTML au format suivant :
-
-<div class="card">
-    <div class="meta"><span>Source : NOM_DE_LA_SOURCE</span><span>Statut : Fiche de Synthèse</span></div>
-    <h3>TITRE_DE_L_ARTICLE</h3>
-    <p><b>Résumé de la position :</b> RESUME_JURIDIQUE_DE_L_IA</p>
-    <p style="margin-top:0.5rem; font-size:0.9rem; color:#c5a059;"><b>💡 Intérêt pour le mémoire :</b> CONSEIL_DE_REDACTION_POUR_L_ETUDIANTE</p>
-</div>
-
-Règles de tri impératives :
-Mets toutes les cartes du Conseil d'État et de la CJUE sous la ligne : === BLOC_JURISPRUDENCE ===
-Mets la carte du BOFiP sous la ligne : === BLOC_BOFIP ===
-Mets les cartes de Dalloz et Navis sous la ligne : === BLOC_DOCTRINE ===
-
-Renvoie uniquement le texte contenant ces trois lignes repères et leurs cartes associées. Pas de balises de code Markdown comme ```html.
-"""
+# 1. Simulation de la collecte automatique des flux d'actualités fiscales (BOFiP, CE, Dalloz)
+# Dans une version avancée, on viendrait lire les flux RSS de ces sites.
+flux_actualites = [
+    {
+        "source": "Conseil d'État",
+        "categorie": "jurisprudence",
+        "titre": "Arrêt CE, 15 mars 2026 : Imposition des gains issus de plateformes étrangères (OnlyFans, Patreon) au titre des BNC.",
+        "lien": "https://www.conseil-etat.fr/fr/arianeweb/"
+    },
+    {
+        "source": "CJUE",
+        "categorie": "jurisprudence",
+        "titre": "Arrêt CJUE : Règles de territorialité de la TVA applicables aux prestations de services numériques transfrontalières.",
+        "lien": "https://curia.europa.eu/"
+    },
+    {
+        "source": "BOFiP",
+        "categorie": "bofip",
+        "titre": "Mise à jour BOFiP : Articulation entre l'abattement forfaitaire de 34% (Micro-BNC) et la déduction des frais réels pour les influenceurs.",
+        "lien": "https://bofip.impots.gouv.fr/"
+    },
+    {
+        "source": "Dalloz Actualité",
+        "categorie": "doctrine",
+        "titre": "Chronique : Requalification fiscale des avantages en nature et cadeaux reçus par les créateurs de contenu (Art. 79 du CGI).",
+        "lien": "https://www.dalloz-actualite.fr/"
+    },
+    {
+        "source": "Navis Fiscal",
+        "categorie": "doctrine",
+        "titre": "Arbitrage de structure : IS vs IR (SASU ou Entreprise Individuelle) pour l'activité de streaming à forte croissance.",
+        "lien": "https://www.efl.fr/"
+    }
+]
 
 try:
-    print("Appel de Gemini...")
-    response = client.models.generate_content(model='gemini-2.5-flash', contents=consigne_ia)
-    resultat_ia = response.text
-
-    # Découpage des blocs reçus de l'IA
-    cartes_jurisprudence = resultat_ia.split("=== BLOC_JURISPRUDENCE ===")[1].split("=== BLOC_BOFIP ===")[0].strip()
-    cartes_bofip = resultat_ia.split("=== BLOC_BOFIP ===")[1].split("=== BLOC_DOCTRINE ===")[0].strip()
-    cartes_doctrine = resultat_ia.split("=== BLOC_DOCTRINE ===")[1].strip()
-
-    # Lecture du fichier de structure index.html
+    # 2. Lecture du fichier de structure HTML
     with open("index.html", "r", encoding="utf-8") as f:
         html = f.read()
 
-    # Injection par remplacement d'identifiants (Ta méthode de l'application IT)
-    html = html.replace('<div id="jurisprudence-container"></div>', f'<div id="jurisprudence-container">\n{cartes_jurisprudence}\n</div>')
-    html = html.replace('<div id="bofip-container"></div>', f'<div id="bofip-container">\n{cartes_bofip}\n</div>')
-    html = html.replace('<div id="doctrine-container"></div>', f'<div id="doctrine-container">\n{cartes_doctrine}\n</div>')
+    # On prépare nos chaînes de caractères pour stocker les liens de veille
+    liens_jurisprudence = ""
+    liens_bofip = ""
+    liens_doctrine = ""
 
-    # Sauvegarde du fichier final mis à jour
+    # 3. Tri et mise en forme automatique des alertes sous forme de liens cliquables
+    for alerte in flux_actualites:
+        bloc_html = f"""
+        <div class="veille-item" style="background: white; padding: 1rem; margin-bottom: 0.8rem; border-radius: 6px; border-left: 4px solid #c5a059; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <span style="font-size: 0.8rem; font-weight: bold; color: #718096; text-transform: uppercase;">[{alerte['source']}]</span>
+            <p style="margin: 0.3rem 0; font-weight: 500; color: #2d3748;">{alerte['titre']}</p>
+            <a href="{alerte['lien']}" target="_blank" style="font-size: 0.85rem; color: #c5a059; text-decoration: none; font-weight: bold;">→ Accéder à la source officielle</a>
+        </div>
+        """
+        if alerte["categorie"] == "jurisprudence":
+            liens_jurisprudence += bloc_html
+        elif alerte["categorie"] == "bofip":
+            liens_bofip += bloc_html
+        elif alerte["categorie"] == "doctrine":
+            liens_doctrine += bloc_html
+
+    # 4. Injection automatique dans les conteneurs du site de ton amie
+    html = html.replace('<div id="jurisprudence-container"></div>', f'<div id="jurisprudence-container">\n{liens_jurisprudence}\n</div>')
+    html = html.replace('<div id="bofip-container"></div>', f'<div id="bofip-container">\n{liens_bofip}\n</div>')
+    html = html.replace('<div id="doctrine-container"></div>', f'<div id="doctrine-container">\n{liens_doctrine}\n</div>')
+
+    # 5. Sauvegarde du fichier mis à jour
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html)
         
-    print("Fiches injectées proprement avec ta méthode d'origine !")
+    print("Le flux de veille automatique a été rafraîchi avec succès !")
 
 except Exception as e:
-    print(f"Erreur d'exécution : {e}")
+    print(f"Erreur lors de la mise à jour de la veille : {e}")
     raise e
