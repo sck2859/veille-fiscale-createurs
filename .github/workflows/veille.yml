@@ -3,6 +3,12 @@ name: Robot Veille Fiscale
 on:
   workflow_dispatch:
 
+# Autorisations obligatoires pour que GitHub Actions puisse écrire et publier le site
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -25,10 +31,21 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python script.py
 
-      - name: Sauvegarder les modifications de l'IA
+      - name: Sauvegarder les modifications dans le dépôt
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           git add index.html
           git commit -m "Mise à jour automatique de la veille fiscale" || echo "Pas de changements"
           git push
+
+      - name: Configurer GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload du site internet
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - name: Déploiement Forcé sur GitHub Pages
+        uses: actions/deploy-pages@v4
