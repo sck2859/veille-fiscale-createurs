@@ -1,89 +1,216 @@
+import feedparser
 import os
+from datetime import datetime
 
-# 1. Base de données de la veille fiscale
-flux_actualites = [
+# ============================================
+# LIENS FIXES - Sources officielles clés
+# Ces liens ne changent pas, ils pointent vers
+# les ressources essentielles pour le mémoire
+# ============================================
+
+LIENS_FIXES = [
+    {
+        "source": "BOFiP",
+        "categorie": "bofip",
+        "influenceur": True,
+        "titre": "BOFiP - BNC : Régime des bénéfices non commerciaux (base doctrine administrative)",
+        "lien": "https://bofip.impots.gouv.fr/bofip/5626-PGP.html"
+    },
+    {
+        "source": "BOFiP",
+        "categorie": "bofip",
+        "influenceur": True,
+        "titre": "BOFiP - Micro-BNC : Régime micro-fiscal et abattement forfaitaire 34%",
+        "lien": "https://bofip.impots.gouv.fr/bofip/1018-PGP.html"
+    },
+    {
+        "source": "BOFiP",
+        "categorie": "bofip",
+        "influenceur": True,
+        "titre": "BOFiP - TVA : Prestations de services numériques et territorialité",
+        "lien": "https://bofip.impots.gouv.fr/bofip/2035-PGP.html"
+    },
+    {
+        "source": "BOFiP",
+        "categorie": "bofip",
+        "influenceur": True,
+        "titre": "BOFiP - Droits d'auteur : Régime fiscal des revenus d'auteur (article 93 CGI)",
+        "lien": "https://bofip.impots.gouv.fr/bofip/5633-PGP.html"
+    },
+    {
+        "source": "Légifrance",
+        "categorie": "bofip",
+        "influenceur": True,
+        "titre": "CGI Article 92 - Définition des BNC et revenus assimilés",
+        "lien": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006302347"
+    },
+    {
+        "source": "Légifrance",
+        "categorie": "bofip",
+        "influenceur": True,
+        "titre": "CGI Article 93 - Détermination du bénéfice imposable en BNC",
+        "lien": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000036428069"
+    },
     {
         "source": "Conseil d'État",
         "categorie": "jurisprudence",
         "influenceur": True,
-        "titre": "Arrêt CE, 15 mars 2026 : Imposition des gains issus de plateformes étrangères (OnlyFans, Patreon) au titre des BNC professionnels.",
+        "titre": "Recherche Arianeweb - Jurisprudence fiscale BNC et revenus numériques",
         "lien": "https://www.conseil-etat.fr/fr/arianeweb/"
     },
     {
         "source": "CJUE",
         "categorie": "jurisprudence",
         "influenceur": False,
-        "titre": "Arrêt CJUE : Règles de territorialité de la TVA applicables aux prestations de services numériques transfrontalières.",
-        "lien": "https://curia.europa.eu/"
+        "titre": "CJUE - Jurisprudence TVA sur services numériques transfrontaliers",
+        "lien": "https://curia.europa.eu/juris/recherche.jsf"
     },
-    {
-        "source": "BOFiP",
-        "categorie": "bofip",
-        "influenceur": True,
-        "titre": "Mise à jour BOFiP : Articulation entre l'abattement forfaitaire de 34% (Micro-BNC) et la déduction des frais réels pour les influenceurs et créateurs de contenu.",
-        "lien": "https://bofip.impots.gouv.fr/"
-    },
-    {
-        "source": "Dalloz Actualité",
-        "categorie": "doctrine",
-        "influenceur": True,
-        "titre": "Chronique : Requalification fiscale des avantages en nature et cadeaux reçus par les créateurs de contenu (Art. 79 du CGI).",
-        "lien": "https://www.dalloz-actualite.fr/"
-    },
-    {
-        "source": "Navis Fiscal",
-        "categorie": "doctrine",
-        "influenceur": True,
-        "titre": "Arbitrage de structure : IS vs IR (SASU ou Entreprise Individuelle) pour l'activité de streaming à forte croissance.",
-        "lien": "https://www.efl.fr/"
-    }
 ]
 
+# ============================================
+# FLUX RSS - Sources automatiques
+# Ces articles se mettent à jour automatiquement
+# ============================================
+
+FEEDS = {
+    "jurisprudence": [
+        "https://www.conseil-etat.fr/actualites/rss",
+        "https://www.actu-juridique.fr/feed/",
+    ],
+    "bofip": [
+        "https://bofip.impots.gouv.fr/flux-rss",
+        "https://www.vie-publique.fr/rss.xml",
+    ],
+    "doctrine": [
+        "https://www.village-justice.com/articles/rss.php?domaine=5",
+        "https://www.fiscalonline.com/feed",
+        "https://www.legalis.net/feed",
+    ]
+}
+
+# Mots-clés pour filtrer les articles pertinents pour le mémoire
+MOTS_CLES_INFLUENCEUR = [
+    "influenceur", "créateur", "contenu", "streaming", "youtube",
+    "instagram", "tiktok", "twitch", "bnc", "micro-bnc", "numérique",
+    "plateforme", "redevance", "droits d'auteur", "onlyfans", "patreon",
+    "fiscalité", "impôt", "tva", "revenu"
+]
+
+def est_pertinent(titre, resume=""):
+    """Vérifie si un article est pertinent pour le sujet du mémoire"""
+    texte = (titre + " " + resume).lower()
+    return any(mot in texte for mot in MOTS_CLES_INFLUENCEUR)
+
+def faire_bloc(source, titre, lien, badge_nouveau=False):
+    """Génère le HTML d'un bloc article"""
+    badge = '<span style="background:#c5a059;color:white;font-size:0.7rem;padding:2px 6px;border-radius:10px;margin-left:8px;">🆕 Nouveau</span>' if badge_nouveau else ""
+    return f"""
+    <div class="veille-item" style="background: white; padding: 1rem; margin-bottom: 0.8rem; border-radius: 6px; border-left: 4px solid #c5a059; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <span style="font-size: 0.8rem; font-weight: bold; color: #718096; text-transform: uppercase;">[{source}]</span>{badge}
+        <p style="margin: 0.3rem 0; font-weight: 500; color: #2d3748;">{titre}</p>
+        <a href="{lien}" target="_blank" style="font-size: 0.85rem; color: #c5a059; text-decoration: none; font-weight: bold;">→ Accéder à la source officielle</a>
+    </div>
+    """
+
+# ============================================
+# GÉNÉRATION DU CONTENU
+# ============================================
+
+liens_memoire = ""
+liens_jurisprudence = ""
+liens_bofip = ""
+liens_doctrine = ""
+
+# 1. Ajout des liens fixes
+for item in LIENS_FIXES:
+    bloc = faire_bloc(item["source"], item["titre"], item["lien"])
+    if item["influenceur"]:
+        liens_memoire += bloc
+    if item["categorie"] == "jurisprudence":
+        liens_jurisprudence += bloc
+    elif item["categorie"] == "bofip":
+        liens_bofip += bloc
+    elif item["categorie"] == "doctrine":
+        liens_doctrine += bloc
+
+# 2. Ajout des articles RSS automatiques
+for categorie, urls in FEEDS.items():
+    for url in urls:
+        try:
+            feed = feedparser.parse(url)
+            for entry in feed.entries[:5]:
+                titre = entry.get("title", "Sans titre")
+                lien = entry.get("link", "#")
+                resume = entry.get("summary", "")
+                source = feed.feed.get("title", url)
+                pertinent = est_pertinent(titre, resume)
+                bloc = faire_bloc(source, titre, lien, badge_nouveau=True)
+                if categorie == "jurisprudence":
+                    liens_jurisprudence += bloc
+                elif categorie == "bofip":
+                    liens_bofip += bloc
+                elif categorie == "doctrine":
+                    liens_doctrine += bloc
+                if pertinent:
+                    liens_memoire += bloc
+        except Exception as e:
+            print(f"Erreur sur {url} : {e}")
+
+# Message si aucun contenu
+vide = '<p style="color:#718096;font-style:italic;">Aucune actualité récente.</p>'
+if not liens_jurisprudence:
+    liens_jurisprudence = vide
+if not liens_bofip:
+    liens_bofip = vide
+if not liens_doctrine:
+    liens_doctrine = vide
+if not liens_memoire:
+    liens_memoire = vide
+
+# ============================================
+# LECTURE ET RÉÉCRITURE DE L'INDEX.HTML
+# ============================================
+
 try:
-    # 2. Lecture du fichier de structure HTML
     with open("index.html", "r", encoding="utf-8") as f:
         html = f.read()
 
-    # Initialisation des chaînes pour chaque conteneur
-    liens_memoire = ""
-    liens_jurisprudence = ""
-    liens_bofip = ""
-    liens_doctrine = ""
+    # Remplacement des containers — méthode robuste
+    import re
 
-    # 3. Tri et formatage des alertes
-    for alerte in flux_actualites:
-        bloc_html = f"""
-        <div class="veille-item" style="background: white; padding: 1rem; margin-bottom: 0.8rem; border-radius: 6px; border-left: 4px solid #c5a059; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-            <span style="font-size: 0.8rem; font-weight: bold; color: #718096; text-transform: uppercase;">[{alerte['source']}]</span>
-            <p style="margin: 0.3rem 0; font-weight: 500; color: #2d3748;">{alerte['titre']}</p>
-            <a href="{alerte['lien']}" target="_blank" style="font-size: 0.85rem; color: #c5a059; text-decoration: none; font-weight: bold;">→ Accéder à la source officielle</a>
-        </div>
-        """
-        
-        # Si ça concerne directement les influenceurs, on le pousse aussi dans le focus mémoire
-        if alerte["influenceur"]:
-            liens_memoire += bloc_html
+    html = re.sub(
+        r'<div id="memoire-container">.*?</div>',
+        f'<div id="memoire-container">{liens_memoire}</div>',
+        html, flags=re.DOTALL
+    )
+    html = re.sub(
+        r'<div id="jurisprudence-container">.*?</div>',
+        f'<div id="jurisprudence-container">{liens_jurisprudence}</div>',
+        html, flags=re.DOTALL
+    )
+    html = re.sub(
+        r'<div id="bofip-container">.*?</div>',
+        f'<div id="bofip-container">{liens_bofip}</div>',
+        html, flags=re.DOTALL
+    )
+    html = re.sub(
+        r'<div id="doctrine-container">.*?</div>',
+        f'<div id="doctrine-container">{liens_doctrine}</div>',
+        html, flags=re.DOTALL
+    )
 
-        # Classement classique par type de document
-        if alerte["categorie"] == "jurisprudence":
-            liens_jurisprudence += bloc_html
-        elif alerte["categorie"] == "bofip":
-            liens_bofip += bloc_html
-        elif alerte["categorie"] == "doctrine":
-            liens_doctrine += bloc_html
+    # Mise à jour de la date si elle existe dans le HTML
+    html = re.sub(
+        r'Dernière mise à jour :.*?(?=<)',
+        f'Dernière mise à jour : {datetime.now().strftime("%d/%m/%Y à %H:%M")}',
+        html
+    )
 
-    # 4. Injection par remplacement d'identifiants (sans doublons)
-    html = html.replace('<div id="memoire-container"></div>', f'<div id="memoire-container">\n{liens_memoire}\n</div>')
-    html = html.replace('<div id="jurisprudence-container"></div>', f'<div id="jurisprudence-container">\n{liens_jurisprudence}\n</div>')
-    html = html.replace('<div id="bofip-container"></div>', f'<div id="bofip-container">\n{liens_bofip}\n</div>')
-    html = html.replace('<div id="doctrine-container"></div>', f'<div id="doctrine-container">\n{liens_doctrine}\n</div>')
-
-    # 5. Sauvegarde
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html)
-        
-    print("Le flux de veille et l'onglet mémoire ont été mis à jour avec succès !")
+
+    print("✅ Site mis à jour avec succès !")
 
 except Exception as e:
-    print(f"Erreur d'exécution : {e}")
+    print(f"❌ Erreur : {e}")
     raise e
