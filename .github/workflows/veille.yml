@@ -24,3 +24,11 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python script.py
+
+      - name: Sauvegarder les modifications de l'IA
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add index.html
+          git commit -m "Mise à jour automatique de la veille fiscale" || echo "Pas de changements"
+          git push
