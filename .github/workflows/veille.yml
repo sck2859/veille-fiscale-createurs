@@ -3,7 +3,6 @@ name: Robot Veille Fiscale
 on:
   workflow_dispatch:
 
-# Autorisations obligatoires pour que GitHub Actions puisse écrire et publier le site
 permissions:
   contents: write
   pages: write
@@ -12,6 +11,10 @@ permissions:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    # C'est cette ligne exacte ci-dessous que GitHub réclamait dans ton message d'erreur :
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -48,4 +51,5 @@ jobs:
           path: '.'
 
       - name: Déploiement Forcé sur GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
